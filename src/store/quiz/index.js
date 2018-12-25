@@ -2,16 +2,17 @@ import db from '@/db';
 import firebase from '@/firebase';
 
 import {
-  UPDATE_INFORMAITON,  
+  UPDATE_INFORMAITON,
   ADD_QUESTION,
-  REMOVE_QUESTION,
   UPDATE_QUESTION,
+  REMOVE_QUESTION,
   ADD_ANSWER,
-  REMOVE_ANSWER,    
+  REMOVE_ANSWER,
   UPDATE_ANSWER,
   RESET_QUIZ,
   RESET_QUIZ_LIST,
-  PUSH_QUIZ
+  PUSH_QUIZ,
+  SET_QUIZ
 } from './mutations';
 
 const state = {
@@ -24,44 +25,45 @@ const state = {
         points: 50,
         answers: [
           {
-            answer: "First answer",
-            isRight: false
+            isRight: false,
+            answer: "First answer"
+          },
+          {
+            isRight: false,
+            answer: "Second answer"
+          },
+          {
+            isRight: false,
+            answer: "Third answer"
           }
         ]
       }
-    ],
-    list: []
-  }
+    ]
+  },
+
+  list: [],
+
+  quiz: null
 };
 
 const getters = {
   newQuiz: ({newQuiz}) => newQuiz,
-  list: ({list}) => list
+  list: ({list}) => list,
+  quiz: ({quiz}) => quiz
 };
 
 const mutations = {
-  
+  [RESET_QUIZ](state) {
+    state.newQuiz = {
+      title: "",
+      description: "",
+      questions: []
+    }
+  },
+
   [UPDATE_INFORMAITON](state, info) {
     state.newQuiz.title = info.title;
     state.newQuiz.description = info.description;
-  },
-
-  [ADD_QUESTION](state) {
-    state.newQuiz
-      .questions
-      .push({
-        question: "Question",
-        points: 0,
-        answers: []
-      })
-  },
-
-  [REMOVE_QUESTION](state, questionIndex) {
-    if (state.newQuiz.questions.length > 1) {
-      state.newQuiz
-        .questions
-        .splice(questionIndex, 1);
-    }
   },
 
   [ADD_QUESTION](state) {
@@ -82,6 +84,24 @@ const mutations = {
     question.points = payload.points;
   },
 
+  [REMOVE_QUESTION](state, questionIndex) {
+    if (state.newQuiz.questions.length > 1) {
+      state.newQuiz
+        .questions
+        .splice(questionIndex, 1);
+    }
+  },
+
+  [ADD_ANSWER](state, questionIndex) {
+    const answers = state.newQuiz.questions[questionIndex].answers;
+    if (answers.length < 5) {
+      answers.push({
+        answer: "Anotha one!",
+        isRight: false
+      });
+    }
+  },
+
   [UPDATE_ANSWER](state, payload) {
     const questionIndex = payload.questionIndex;
     const answerIndex = payload.answerIndex;
@@ -92,7 +112,7 @@ const mutations = {
       .questions[questionIndex]
       .answers[answerIndex];
 
-    answer.isRight = isRight;
+    answer.isRight = payload.isRight;
     answer.answer = answerText;
   },
 
@@ -107,30 +127,16 @@ const mutations = {
     }
   },
 
-  [ADD_ANSWER](state, questionIndex) {
-    const answers = state.newQuiz.questions[questionIndex].answers;
-    if (answers.length < 5) {
-      answers.push({
-        answer: "Anotha one!",
-        isRight: false
-      });
-    }
-  },
-
-  [RESET_QUIZ](state) {
-    this.newQuiz = {
-      title: "",
-      description: "",
-      questions: []
-    }
-  },
-
   [PUSH_QUIZ](state, quiz) {
     state.list.push(quiz);
   },
 
   [RESET_QUIZ_LIST](state) {
     state.list = [];
+  },
+
+  [SET_QUIZ](state, quiz) {
+    state.quiz = quiz;
   }
 
 };
@@ -139,9 +145,21 @@ const actions = {
   async create({state}) {
     const user = firebase.auth().currentUser;
     if (user) {
+      const quiz = state.newQuiz;
+
+      if (!quiz.title || !quiz.description)
+        throw new Error('Quiz information is required!');
+
+
+      if (quiz.questions.length == 0)
+        throw new Error('Quiz is empty!');
 
       // check if there is a question without a right answer
-      state.newQuiz.questions.map(question => {
+      quiz.questions.map(question => {
+        if (question.answers.length == 0) {
+          throw new Error(`Question: '${question.question}' doesn't have answers!`)
+        }
+
         let hasRightAnswer = false;
 
         question.answers.map(answer => {
@@ -149,8 +167,7 @@ const actions = {
         });
 
         if (!hasRightAnswer) {
-          alert(`Question: '${question.question}' doesn't have a right answer!`);
-          throw new Error();
+          throw new Error(`Question: '${question.question}' doesn't have a right answer selected!`)
         }
       });
 
@@ -164,7 +181,8 @@ const actions = {
 
     } else {
       alert('Unauthorized');
-    }    
+    }
+    //db.collection('quizes')
   },
 
   list({commit}) {
@@ -180,8 +198,18 @@ const actions = {
         }
       });
     });
-  }
+  },
 
+  async get({commit}, id) {
+    const quiz = await db.collection('quizes').doc(id).get();
+
+    if (quiz.exists) {
+      commit(SET_QUIZ, {
+        id: quiz.id,
+        ...quiz.data()
+      });
+    }
+  }
 };
 
 export default {

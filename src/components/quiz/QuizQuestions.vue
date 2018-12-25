@@ -55,7 +55,8 @@
                         small
                         color="red"
                         @click="removeAnswer({questionIndex, answerIndex})"
-                      > <v-icon>remove</v-icon>
+                      >
+                        <v-icon>remove</v-icon>
                       </v-btn>
                     </v-flex>
                   </v-layout>
@@ -67,7 +68,7 @@
                     color="primary"
                     @click="addAnswer(questionIndex)"
                     >Add Answer
-                  </v-btn>  
+                  </v-btn>
                   <v-btn
                     class="mt-4"
                     color="red"
@@ -89,12 +90,11 @@
   import { mapMutations, mapGetters } from 'vuex';
   import {
     ADD_ANSWER,
-    REMOVE_QUESTION,
     UPDATE_QUESTION,
+    REMOVE_QUESTION,
     REMOVE_ANSWER,
     UPDATE_ANSWER
   } from '@/store/quiz/mutations';
-  
   export default {
     name: 'quiz-questions',
     computed: {
@@ -105,30 +105,11 @@
     methods: {
       ...mapMutations('quiz', {
         addAnswer: ADD_ANSWER,
-        removeAnswer: REMOVE_ANSWER,
         updateQuestion: UPDATE_QUESTION,
         removeQuestion: REMOVE_QUESTION,
+        removeAnswer: REMOVE_ANSWER,
         updateAnswer: UPDATE_ANSWER
       }),
-
-      updateQuestionTitle(value, questionIndex) {
-        this.updateQuestion({
-          question: value,
-          points: this.quiz.questions[questionIndex].points,
-          questionIndex
-        });
-      },
-      updateQuestionPoints(value, questionIndex) {
-        // test if the input does not contain a valid number or the number is negative
-        const points = parseInt(value);
-        if (isNaN(points) || points < 0) return; // cancel triggering the mutation
-        this.updateQuestion({
-          question: this.quiz.questions[questionIndex].question,
-          points,
-          questionIndex
-        });
-      },
-      
       updateAnswerText(value, questionIndex, answerIndex) {
         this.updateAnswer({
           answer: value,
@@ -150,6 +131,23 @@
           questionIndex,
           answerIndex,
         })
+      },
+      updateQuestionTitle(value, questionIndex) {
+        this.updateQuestion({
+          question: value,
+          points: this.quiz.questions[questionIndex].points,
+          questionIndex
+        });
+      },
+      updateQuestionPoints(value, questionIndex) {
+        // test if the input does not contain a valid number or the number is negative
+        const points = parseInt(value);
+        if (isNaN(points) || points < 0) return; // cancel triggering the mutation
+        this.updateQuestion({
+          question: this.quiz.questions[questionIndex].question,
+          points,
+          questionIndex
+        });
       }
     }
   }

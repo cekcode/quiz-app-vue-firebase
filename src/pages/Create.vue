@@ -42,7 +42,7 @@
           await this.create();
           this.$router.push('/');
         } catch(error) {
-          alert('Something went wrong');
+          alert(error);
         }
       }
     }
